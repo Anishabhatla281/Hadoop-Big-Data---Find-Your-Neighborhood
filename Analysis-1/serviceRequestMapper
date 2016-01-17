@@ -9,7 +9,9 @@ import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reporter;
  
     public class serviceRequestMapper extends MapReduceBase implements Mapper<LongWritable, Text, Text, IntWritable> {
-              
+ 
+   // To assign weight(weight value being 1) to every zip code that receives a sanitation complaint
+             
         public void map(LongWritable key, Text value, OutputCollector<Text, IntWritable> output, Reporter reporter) throws IOException {
 
             StringTokenizer tokenizer = new StringTokenizer(value.toString(), ",");
@@ -28,7 +30,7 @@ import org.apache.hadoop.mapred.Reporter;
             output.collect(new Text(zip), new IntWritable(1));
         }
             else{
-            	output.collect(new Text("ProBLEMMMMMMMMMMMMMMMMMMMMM"), new IntWritable(1));
+            	output.collect(new Text("Invalid Zip Code"), new IntWritable(1));
             }
         }
        }
