@@ -1,0 +1,19 @@
+PIG COMMAND FOR ANALYSIS1 AFTER RUNNING MAP REDUCE JOBS ON 311 AND CRIME
+pig -x local
+pro1 = LOAD '/home/cloudera/Desktop/rodentoutput.txt' AS ( Zip: int, Sum: int);
+pro2 = LOAD '/home/cloudera/Desktop/sanitationoutput.txt' AS ( Zip: int, Sum: int);
+pro3 = LOAD '/home/cloudera/Desktop/garbageoutput.txt' AS ( Zip: int, Sum: int);
+pro4 = LOAD '/home/cloudera/Desktop/potholessoutput.txt' AS ( Zip: int, Sum: int);
+finalpro = UNION pro1,pro2,pro3,pro4;
+grouped_finalpro = GROUP finalpro BY Zip;
+count_finalpro = FOREACH grouped_finalpro GENERATE group, SUM(finalpro.Sum) AS total;
+finalsum = LOAD '/home/cloudera/Desktop/SRfinalScore' AS (Zip: int, Sum: int);
+
+crime = LOAD '/home/cloudera/Desktop/crimesum' AS (Zip:int, Sum: int);
+c = FOREACH crime GENERATE Zip, Sum*2;
+bestarea = UNION c,finalsum;
+ba = GROUP bestarea BY Zip;
+finalbestarea = FOREACH ba GENERATE group, SUM(bestarea.Sum) AS sm;
+STORE finalbestarea INTO '/home/cloudera/Desktop/bestarea2';
+bestAreafinal = ORDER finalbestarea BY $1 ASC;
+STORE bestAreafinal INTO '/home/cloudera/Desktop/finalScore';
