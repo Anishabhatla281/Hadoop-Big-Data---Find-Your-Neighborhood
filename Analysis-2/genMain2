@@ -10,7 +10,7 @@ import org.apache.hadoop.mapred.*;
         JobConf job = new JobConf(genMain.class);
         job.setJobName("genRentTrend");
         
-        // deleting extra zip codes to make equal number of rows for both files to be merged
+        // merge Zillow Avg Property values with Map Reduce1 output
         
         MergeGenAndRentAvg m = new MergeGenAndRentAvg();
         m.mergeFiles();
