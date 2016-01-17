@@ -12,6 +12,7 @@ import org.apache.hadoop.mapred.Reporter;
               
         public void map(LongWritable key, Text value, OutputCollector<Text, IntWritable> output, Reporter reporter) throws IOException {
 
+//Tokenize each line to extract crime type and zip code
             StringTokenizer tokenizer = new StringTokenizer(value.toString(), ",");
             if(tokenizer.countTokens()!=0)
             {
@@ -24,7 +25,9 @@ import org.apache.hadoop.mapred.Reporter;
             }
             String type = data[2];
             type = type.trim();
-            int weight = 0;            
+            int weight = 0;    
+//Assigning weights to different crime types based on prioirity
+        
             if(type.equalsIgnoreCase("arson"))
            	{
             	weight = 2;
@@ -153,14 +156,14 @@ import org.apache.hadoop.mapred.Reporter;
             {
             	weight = 2;            	
             }
-            
+//Mapper Output in the form of (Zip, weight) to find the sum of weights of all types of crime that occured in a particular zip code in the reducer.
             if(data[3].trim().startsWith("60"))
             	output.collect(new Text(data[3].trim()), new IntWritable(weight));
             else
             	output.collect(new Text(data[4].trim()),new IntWritable(weight));
         }
             else{
-            	output.collect(new Text("ProBLEMMMMMMMMMMMMMMMMMMMMM"), new IntWritable(1));
+            	output.collect(new Text("Invalid_Zip"), new IntWritable(1));
             }
         }
        }
