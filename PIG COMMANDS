@@ -1,0 +1,102 @@
+PIG COMMANDS FOR MAP REDUCE 1 AND CRIME DATA:
+
+sanitation = LOAD '/user/cloudera/Sani.csv' USING PigStorage(',') AS (Date: chararray, Status: chararray, Completion_Date: chararray, Request_Number: chararray, Type: chararray, Nature: chararray, Address: chararray, Zip: int, X: float, Y: float, Ward: chararray, District: chararray, Community: chararray, Latitude: float, Longitude: float, Location: chararray);
+
+sanitation = FILTER sanitation by (NOT ( Zip == 0 ) OR ( Zip == NULL ));
+grouped_sanitation = group sanitation by Zip;
+count_sanitation = FOREACH grouped_sanitation GENERATE group,COUNT(sanitation.Zip) AS mycount;
+STORE count_sanitation into '/user/cloudera/sanitationoutput.txt';
+
+garbagecarts = LOAD '/user/cloudera/GarbageCartss.csv' USING PigStorage(',') AS (Date: chararray, Status: chararray, Completion_Date: chararray, Request_Number: chararray, Type: chararray, Number_Of_Black_Carts: int, Current_Activity: chararray, Most_Recent_Activity: chararray, Address: chararray, Zip: int, X: float, Y: float, Ward: chararray, District: chararray, Community: chararray, SSA: int, Latitude: float, Longitude: float, Location: chararray);
+
+garbage = FILTER garbagecarts by (NOT ( Zip == 0 ) OR ( Zip == NULL ));
+g = FOREACH rod GENERATE Zip;
+STORE r INTO '/user/cloudera/gfiltered.txt';
+grouped_garbage = group garbage by Zip;
+count_garbage= FOREACH grouped_garbage GENERATE group,COUNT(garbage.Zip) AS mycount;
+STORE count_garbage into '/user/cloudera/garbageoutput.txt';
+
+rodent = LOAD '/user/cloudera/Rodents.csv' USING PigStorage(',') AS (Date: chararray, Status: chararray, Completion: chararray, Request_Number: chararray, Type: chararray, Number_Of_Premises_Baited: int, Number_Of_Premises_With_Garbage: int, Number_Of_Premises_With_Rats: int, Current_Activity: chararray, Recent_Activity: chararray, Address: chararray, Zip: int, X: float, Y: float, Ward: chararray, District: chararray, Community: chararray, Latitude: float, Longitude: float, Location: chararray);
+
+rod = FILTER rodent by (NOT ( Zip == 0 ) OR ( Zip == NULL ));
+r = FOREACH rod GENERATE Zip;
+STORE r INTO '/user/cloudera/rfiltered.txt';
+grouped_rodent = group rod by Zip;
+count_rodent= FOREACH grouped_rodent GENERATE group,COUNT(rod.Zip) AS mycount;
+STORE count_rodent into '/user/cloudera/rodentoutput.txt';
+
+potholes = LOAD '/user/cloudera/PotHoless.csv' USING PigStorage(',') AS (Date: chararray, Status: chararray, Completion: chararray, Type: chararray, Current_Activity: chararray, Recent_Action: chararray, Number_Of_PotHoles: int, Street_Address: chararray, Zip: int, X: float, Y: float, Ward: chararray, PoliceDistrict: chararray, Community: chararray, SSA: chararray, Latitude: float, Longitude: float, Location: chararray);
+
+pot = FILTER potholes by (NOT ( Zip == 0 ) OR ( Zip == NULL ));
+grouped_pot = group pot by Zip;
+count_pot= FOREACH grouped_pot GENERATE group,COUNT(pot.Zip) AS mycount;
+STORE count_pot into '/user/cloudera/potholessoutput.txt';
+
+crime = LOAD '/home/cloudera/Desktop/Crime.csv' USING PigStorage (',') AS (id: int, casenum: chararray, crimedata: chararray, block: chararray, IUCR: chararray, primaryType: chararray, description: chararray, locationDescription: chararray, arrest: chararray, domestic: chararray, beat: int, district: int, ward: int, community: int, FBICode: int, x: long, y: long, year: int, updatedon: chararray, latitude: double, longitude: double, location: chararray);
+filteredcrime = FILTER crime BY IUCR != 'IUCR';
+a = GROUP filteredcrime BY Zip;
+b = FOREACH filteredcrime GENERATE group, COUNT(filteredcrime.Zip) as myCount; 
+STORE b INTO '/home/cloudera/Desktop/crimesumwithoutweights';
+selectedcrime = FOREACH filteredcrime GENERATE latitude, longitude, primaryType, crimedata;
+STORE selectedcrime INTO '/user/cloudera/crimelatlngtypedatetime.txt';
+
+pro1 = LOAD '/user/cloudera/rodentoutput.txt' AS ( Zip: int, Sum: int);
+pro2 = LOAD '/user/cloudera/sanitationoutput.txt' AS ( Zip: int, Sum: int);
+pro3 = LOAD '/user/cloudera/garbageoutput.txt' AS ( Zip: int, Sum: int);
+pro4 = LOAD '/user/cloudera/potholessoutput.txt' AS ( Zip: int, Sum: int);
+finalpro = UNION pro1,pro2,pro3,pro4;
+grouped_finalpro = GROUP finalpro BY Zip;
+count_finalpro = FOREACH grouped_finalpro GENERATE group, SUM(finalpro.Sum) AS total;
+finalsum = LOAD '/home/cloudera/Desktop/SRfinalScore' AS (Zip: int, Sum: int);
+
+crime = LOAD '/home/cloudera/Desktop/crimesum' AS (Zip:int, Sum: int);
+bestarea = UNION crime,finalsum;
+ba = GROUP bestarea BY Zip;
+finalbestarea = FOREACH ba GENERATE group, SUM(bestarea.Sum) AS sm;
+STORE finalbestarea INTO '/home/cloudera/Desktop/bestarea4';
+finalScore = LOAD '/home/cloudera/Desktop/bestareafinalscore' AS (Zip: int, Sum: int);
+bestAreafinal = ORDER finalbestarea BY $1 ASC;
+STORE bestAreafinal INTO '/home/cloudera/Desktop/baFinal3';
+
+DOUBLED:
+crime = LOAD '/home/cloudera/Desktop/crimesum' AS (Zip:int, Sum: int);
+c = FOREACH crime GENERATE Zip, Sum*2;
+dump c;
+bestarea = UNION c,finalsum;
+ba = GROUP bestarea BY Zip;
+finalbestarea = FOREACH ba GENERATE group, SUM(bestarea.Sum) AS sm;
+STORE finalbestarea INTO '/home/cloudera/Desktop/bestarea2';
+bestAreafinal = ORDER finalbestarea BY $1 ASC;
+STORE bestAreafinal INTO '/home/cloudera/Desktop/baFinal2';
+
+3/2:
+crime = LOAD '/home/cloudera/Desktop/crimesum' AS (Zip:int, Sum: int);
+c = FOREACH crime GENERATE Zip, (Sum*3)/2;
+bestarea = UNION c,finalsum;
+ba = GROUP bestarea BY Zip;
+finalbestarea = FOREACH ba GENERATE group, SUM(bestarea.Sum) AS sm;
+STORE finalbestarea INTO '/home/cloudera/Desktop/bestarea3';
+bestAreafinal = ORDER finalbestarea BY $1 ASC;
+STORE bestAreafinal INTO '/home/cloudera/Desktop/baFinal3';
+
+property = LOAD '/user/cloudera/Property_Zillow.csv' USING PigStorage(',') AS (Zip: int, City: chararray, State: chararray, Metro: chararray, Y1996_04: int, Y199_05: int, Y1996_06: int, Y1996_07: int, Y1996_08: int, Y1996_09: int, Y1996_10: int, Y1996_11: int, Y1996_12: int, Y1997_01: int, Y1997_02: int, Y1997_03: int, Y1997_04: int, Y1997_05: int, Y1997_06: int, Y1997_07: int, Y1997_08: int, Y1997_09: int, Y1997_10: int, Y1997_11: int, Y1997_12: int, Y1998_01: int, Y1998_02: int, Y1998_03: int, Y1998_04: int, Y1998_05: int, Y1998_06: int, Y1998_07: int, Y1998_08: int, Y1998_09: int, Y1998_10: int, Y1998_11: int, Y1998_12: int, Y1999_01: int, Y1999_02: int, Y1999_03: int, Y1999_04: int, Y1999_05: int, Y1999_06: int, Y1999_07: int, Y1999_08: int, Y1999_09: int, Y1999_10: int, Y1999_11: int, Y1999_12: int, Y2000_01: int, Y2000_02: int, Y2000_03: int, Y2000_04: int, Y2000_05: int, Y2000_06: int, Y2000_07: int, Y2000_08: int, Y2000_09: int, Y2000_10: int, Y2000_11: int, Y2000_12: int, Y2001_01: int, Y2001_02: int, Y2001_03: int, Y2001_04: int, Y2001_05: int, Y2001_06: int, Y2001_07: int, Y2001_08: int, Y2001_09: int, Y2001_10: int, Y2001_11: int, Y2001_12: int, Y2002_01: int, Y2002_02: int, Y2002_03: int, Y2002_04: int, Y2002_05: int, Y2002_06: int, Y2002_07: int, Y2002_08: int, Y2002_09: int, Y2002_10: int, Y2002_11: int, Y2002_12: int, Y2003_01: int, Y2003_02: int, Y2003_03: int, Y2003_04: int, Y2003_05: int, Y2003_06: int, Y2003_07: int, Y2003_08: int, Y2003_09: int, Y2003_10: int, Y2003_11: int, Y2003_12: int, Y2004_01: int, Y2004_02: int, Y2004_03: int, Y2004_04: int, Y2004_05: int, Y2004_06: int, Y2004_07: int, Y2004_08: int, Y2004_09: int, Y2004_10: int, Y2004_11: int, Y2004_12: int, Y2005_01: int, Y2005_02: int, Y2005_03: int, Y2005_04: int, Y2005_05: int, Y2005_06: int, Y2005_07: int, Y2005_08: int, Y2005_09: int, Y2005_10: int, Y2005_11: int, Y2005_12: int, Y2006_01: int, Y2006_02: int, Y2006_03: int, Y2006_04: int, Y2006_05: int, Y2006_06: int, Y2006_07: int, Y2006_08: int, Y2006_09: int, Y2006_10: int, Y2006_11: int, Y2006_12: int, Y2007_01: int, Y2007_02: int, Y2007_03: int, Y2007_04: int, Y2007_05: int, Y2007_06: int, Y2007_07: int, Y2007_08: int, Y2007_09: int, Y2007_10: int, Y2007_11: int, Y2007_12: int, Y2008_01: int, Y2008_02: int, Y2008_03: int, Y2008_04: int, Y2008_05: int, Y2008_06: int, Y2008_07: int, Y2008_08: int, Y2008_09: int, Y2008_10: int, Y2008_11: int, Y2008_12: int, Y2009_01: int, Y2009_02: int, Y2009_03: int, Y2009_04: int, Y2009_05: int, Y2009_06: int, Y2009_07: int, Y2009_08: int, Y2009_09: int, Y2009_10: int, Y2009_11: int, Y2009_12: int, Y2010_01: int, Y2010_02: int, Y2010_03: int, Y2010_04: int, Y2010_05: int, Y2010_06: int, Y2010_07: int, Y2010_08: int, Y2010_09: int, Y2010_10: int, Y2010_11: int, Y2010_12: int, Y2011_01: int, Y2011_02: int, Y2011_03: int, Y2011_04: int, Y2011_05: int, Y2011_06: int, Y2011_07: int, Y2011_08: int, Y2011_09: int, Y2011_10: int, Y2011_11: int, Y2011_12: int, Y2012_01: int, Y2012_02: int, Y2012_03: int, Y2012_04: int, Y2012_05: int, Y2012_06: int, Y2012_07: int, Y2012_08: int, Y2012_09: int, Y2012_10: int, Y2012_11: int, Y2012_12: int, Y2013_01: int, Y2013_02: int, Y2013_03: int, Y2013_04: int, Y2013_05: int, Y2013_06: int, Y2013_07: int, Y2013_08: int, Y2013_09: int, Y2013_10: int, Y2013_11: int, Y2013_12: int, Y2014_01: int, Y2014_02: int, Y2014_03: int, Y2014_04: int, Y2014_05: int, Y2014_06: int, Y2014_07: int, Y2014_08: int, Y2014_09: int, Y2014_10: int, Y2014_11: int, Y2014_12: int, Y2015_01: int, Y2015_02: int, Y2015_03: int, Y2015_04: int, Y2015_05: int, Y2015_06: int, Y2015_07: int, Y2015_08: int, Y2015_09: int);  
+prop = FILTER property by (City == 'Chicago');
+STORE prop into '/user/cloudera/propertyoutput.txt';
+
+stores2013 = LOAD '/user/cloudera/GroceryStores2013.csv' USING PigStorage(',') AS (Store_Name: chararray, License_ID: int, Account_Number: int, Square_Feet: int, Buffer_Size: chararray, Address: chararray, Zip: int, Community_Area_Name: chararray, Community_Area: int, Ward: int, Census_Tract: chararray, Census_Block: chararray, X: float, Y: float, Latitude: float, Longitude: float, B1996_03: chararray);
+stores2013 = FILTER stores2013 by (NOT ( Zip == 0 ) OR ( Zip == NULL ));
+grouped_stores2013 = group stores2013 by Zip;
+count_stores2013 = FOREACH grouped_stores2013 GENERATE group,COUNT(stores2013.Zip) AS mycount;
+STORE count_stores2013 into '/user/cloudera/stores2013output.txt';
+
+stores = LOAD '/user/cloudera/GroceryStores2011.csv' USING PigStorage(',') AS (Store_Name: chararray, License_ID: int, Account_Number: int, Square_Feet: int, Buffer_Size: chararray, Address: chararray, Zip: int, Community_Area_Name: chararray, Community_Area: int, Ward: int, Census_Tract: chararray, Census_Block: chararray, X: float, Y: float, Latitude: float, Longitude: float, B1996_03: chararray);
+stores = FILTER stores by (NOT ( Zip == 0 ) OR ( Zip == NULL ));
+grouped_stores = group stores by Zip;
+count_stores = FOREACH grouped_stores GENERATE group,COUNT(stores.Zip) AS mycount;
+STORE count_stores into '/user/cloudera/storesoutput.txt';
+
+ab = LOAD '/user/cloudera/clean.txt' USING PigStorage (',') AS (latitude: float, longitude: float, type: chararray, Zip: int);
+b = FOREACH ab GENERATE type;
+c = DISTINCT b;
+STORE c INTO '/user/cloudera/uniquetype.txt';
+

@@ -1,0 +1,8 @@
+create table test(Lattitude STRING,Longitude STRING, TYPE STRING,zip INT) row format delimited fields terminated by ',';
+
+load data inpath '/user/cloudera/clean1.csv' into table test;
+
+
+ INSERT OVERWRITE LOCAL DIRECTORY '/home/cloudera/Desktop/crimeformated' ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' SELECT c.longitude, c.lattitude, c.TYPE, o.crimedate, c.Zip from crime1 o JOIN test c ON (o.latitude = c.lattitude) AND (o.longitude = c.longitude) AND (o.primarytype = c.TYPE);
+
+
